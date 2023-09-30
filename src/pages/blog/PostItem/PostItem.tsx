@@ -1,6 +1,6 @@
 import { useDispatch } from "react-redux";
 import { Post } from "types/blogs.type";
-import { deletePost } from "../blog.reducer";
+import { deletePost, startUpdatingPost } from "../blog.reducer";
 interface Props {
   post: Post;
 }
@@ -8,6 +8,9 @@ function PostItem({ post }: Props) {
   const dispatch = useDispatch();
   const handleDeletePost = () => {
     dispatch(deletePost(post.id));
+  };
+  const handleStartUpdatingPost = () => {
+    dispatch(startUpdatingPost(post.id));
   };
   return (
     <div className="flex flex-col items-center overflow-hidden rounded-lg border md:flex-row">
@@ -28,6 +31,7 @@ function PostItem({ post }: Props) {
             <button
               type="button"
               className="rounded-l-lg border border-gray-200 bg-white py-2 px-4 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700"
+              onClick={handleStartUpdatingPost}
             >
               Edit
             </button>
