@@ -1,21 +1,31 @@
-import { createReducer, createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createReducer, createAction, createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
+import http from "utils/http";
 import { Post } from "types/blogs.type";
-import { initialBlogList } from "constants/blog";
 interface BlogState {
   postList: Post[];
   updatingPost: Post | null;
 }
 const initialState: BlogState = {
-  postList: initialBlogList,
+  postList: [],
   updatingPost: null,
 };
+export const getPostList = createAsyncThunk("blog/getPostList", async (_, thunkAPI) => {
+  const res = await http.get<Post[]>("posts", {
+    signal: thunkAPI.signal,
+  });
+
+  return res.data;
+});
+export const addPost = createAsyncThunk("blog/addPost", async (body: Omit<Post, "id">, thunkAPI) => {
+  const res = await http.post<Post>("posts", body, {
+    signal: thunkAPI.signal,
+  });
+  return res.data;
+});
 const blogSlice = createSlice({
   name: "blog",
   initialState: initialState,
   reducers: {
-    addPost: (state, action: PayloadAction<Post>) => {
-      state.postList.push(action.payload);
-    },
     deletePost: (state, action: PayloadAction<string>) => {
       const postId = action.payload;
       const postIndex = state.postList.findIndex((el: Post) => el.id === postId);
@@ -38,9 +48,20 @@ const blogSlice = createSlice({
       state.updatingPost = null;
     },
   },
-  extraReducers: (builder) => {},
+  extraReducers: (builder) => {
+    builder
+      .addCase("blog/getPostListSuccess", (state, action: any) => {
+        state.postList = action.payload;
+      })
+      .addCase(getPostList.fulfilled, (state, action) => {
+        state.postList = action.payload;
+      })
+      .addCase(addPost.fulfilled, (state, action) => {
+        state.postList.push(action.payload);
+      });
+  },
 });
-export const { addPost, cancelUpdatingPost, deletePost, endUpdatingPost, startUpdatingPost } = blogSlice.actions;
+export const { cancelUpdatingPost, deletePost, endUpdatingPost, startUpdatingPost } = blogSlice.actions;
 export default blogSlice.reducer;
 // export const addPost = createAction<Post>("blog/addPost");
 // export const deletePost = createAction<string>("blog/deletePost");

@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { addPost, cancelUpdatingPost, endUpdatingPost } from "../blog.reducer";
 import { useSelector } from "react-redux";
 import { RootState } from "store";
-
+import { AppDispatch } from "store";
 const initialFormData = {
   title: "",
   description: "",
@@ -16,7 +16,7 @@ const initialFormData = {
 function CreatePost() {
   const [formData, setFormData] = useState<Post>(initialFormData);
   const updatingForm = useSelector((state: RootState) => state.blog.updatingPost);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     setFormData(updatingForm || initialFormData);
@@ -24,8 +24,7 @@ function CreatePost() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formDataWithId = { ...formData, id: new Date().toISOString() };
-    dispatch(addPost(formDataWithId));
+    dispatch(addPost(formData));
     setFormData(initialFormData);
   };
   const handleEndUpdatingPost = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {

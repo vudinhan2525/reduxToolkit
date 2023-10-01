@@ -1,8 +1,18 @@
 import PostItem from "../PostItem";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "store";
+import { useEffect } from "react";
+import { getPostList } from "../blog.reducer";
+import { AppDispatch } from "store";
 function PostList() {
   const postlist = useSelector((state: RootState) => state.blog.postList);
+  const dispatch = useDispatch<AppDispatch>();
+  useEffect(() => {
+    const promise = dispatch(getPostList());
+    return () => {
+      promise.abort();
+    };
+  }, [dispatch]);
   return (
     <div className="bg-white py-6 sm:py-8 lg:py-12">
       <div className="mx-auto max-w-screen-xl px-4 md:px-8">
