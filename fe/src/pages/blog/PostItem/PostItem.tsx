@@ -1,11 +1,12 @@
 import { useDispatch } from "react-redux";
 import { Post } from "types/blogs.type";
 import { deletePost, startUpdatingPost } from "../blog.reducer";
+import { AppDispatch } from "store";
 interface Props {
   post: Post;
 }
 function PostItem({ post }: Props) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const handleDeletePost = () => {
     dispatch(deletePost(post.id));
   };

@@ -1,13 +1,22 @@
-import { createReducer, createAction, createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction, createAsyncThunk, AsyncThunk } from "@reduxjs/toolkit";
 import http from "utils/http";
 import { Post } from "types/blogs.type";
+type GenericAsyncThunk = AsyncThunk<unknown, unknown, any>;
+
+type PendingAction = ReturnType<GenericAsyncThunk["pending"]>;
+type RejectedAction = ReturnType<GenericAsyncThunk["rejected"]>;
+type FulfilledAction = ReturnType<GenericAsyncThunk["fulfilled"]>;
 interface BlogState {
   postList: Post[];
   updatingPost: Post | null;
+  loading: boolean;
+  currentReqId: undefined | string;
 }
 const initialState: BlogState = {
   postList: [],
   updatingPost: null,
+  loading: false,
+  currentReqId: undefined,
 };
 export const getPostList = createAsyncThunk("blog/getPostList", async (_, thunkAPI) => {
   const res = await http.get<Post[]>("posts", {
@@ -22,16 +31,25 @@ export const addPost = createAsyncThunk("blog/addPost", async (body: Omit<Post, 
   });
   return res.data;
 });
+export const updatePost = createAsyncThunk(
+  "blog/updatePost",
+  async ({ postId, body }: { postId: string; body: Post }, thunkAPI) => {
+    const res = await http.put<Post>(`posts/${postId}`, body, {
+      signal: thunkAPI.signal,
+    });
+    return res.data;
+  },
+);
+export const deletePost = createAsyncThunk("blog/deletePost", async (postId: string, thunkAPI) => {
+  await http.delete(`posts/${postId}`, {
+    signal: thunkAPI.signal,
+  });
+  return postId;
+});
 const blogSlice = createSlice({
   name: "blog",
   initialState: initialState,
   reducers: {
-    deletePost: (state, action: PayloadAction<string>) => {
-      const postId = action.payload;
-      const postIndex = state.postList.findIndex((el: Post) => el.id === postId);
-      if (postIndex < 0) return;
-      state.postList.splice(postIndex, 1);
-    },
     startUpdatingPost: (state, action: PayloadAction<string>) => {
       const postId = action.payload;
       const post = state.postList.find((el: Post) => el.id === postId);
@@ -40,11 +58,6 @@ const blogSlice = createSlice({
       }
     },
     cancelUpdatingPost: (state) => {
-      state.updatingPost = null;
-    },
-    endUpdatingPost: (state, action: PayloadAction<Post>) => {
-      const postIndex = state.postList.findIndex((el: Post) => el.id === action.payload.id);
-      state.postList[postIndex] = action.payload;
       state.updatingPost = null;
     },
   },
@@ -58,10 +71,36 @@ const blogSlice = createSlice({
       })
       .addCase(addPost.fulfilled, (state, action) => {
         state.postList.push(action.payload);
-      });
+      })
+      .addCase(updatePost.fulfilled, (state, action) => {
+        const postIndex = state.postList.findIndex((el: Post) => el.id === action.payload.id);
+        state.postList[postIndex] = action.payload;
+        state.updatingPost = null;
+      })
+      .addCase(deletePost.fulfilled, (state, action) => {
+        const postIndex = state.postList.findIndex((el: Post) => el.id === action.payload);
+        if (postIndex < 0) return;
+        state.postList.splice(postIndex, 1);
+      })
+      .addMatcher<PendingAction>(
+        (action) => action.type.endsWith("/pending"),
+        (state, action) => {
+          state.loading = true;
+          state.currentReqId = action.meta.requestId;
+        },
+      )
+      .addMatcher<FulfilledAction | RejectedAction>(
+        (action) => action.type.endsWith("/fulfilled") || action.type.endsWith("/rejected"),
+        (state, action) => {
+          if (state.loading === true && state.currentReqId === action.meta.requestId) {
+            state.loading = false;
+            state.currentReqId = undefined;
+          }
+        },
+      );
   },
 });
-export const { cancelUpdatingPost, deletePost, endUpdatingPost, startUpdatingPost } = blogSlice.actions;
+export const { cancelUpdatingPost, startUpdatingPost } = blogSlice.actions;
 export default blogSlice.reducer;
 // export const addPost = createAction<Post>("blog/addPost");
 // export const deletePost = createAction<string>("blog/deletePost");

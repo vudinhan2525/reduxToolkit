@@ -4,8 +4,10 @@ import { RootState } from "store";
 import { useEffect } from "react";
 import { getPostList } from "../blog.reducer";
 import { AppDispatch } from "store";
+import SkeletonPost from "../SkeletonPost";
 function PostList() {
   const postlist = useSelector((state: RootState) => state.blog.postList);
+  const loading = useSelector((state: RootState) => state.blog.loading);
   const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     const promise = dispatch(getPostList());
@@ -22,11 +24,19 @@ function PostList() {
             Đừng bao giờ từ bỏ. Hôm nay khó khăn, ngày mai sẽ trở nên tồi tệ. Nhưng ngày mốt sẽ có nắng
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-2 xl:grid-cols-2 xl:gap-8">
-          {postlist.map((post, idx) => {
-            return <PostItem key={idx} post={post} />;
-          })}
-        </div>
+        {loading ? (
+          <>
+            <SkeletonPost />
+            <div className="mt-7"></div>
+            <SkeletonPost />
+          </>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-2 xl:grid-cols-2 xl:gap-8">
+            {postlist.map((post, idx) => {
+              return <PostItem key={idx} post={post} />;
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

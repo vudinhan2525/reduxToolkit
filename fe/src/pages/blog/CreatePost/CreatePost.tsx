@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Post } from "types/blogs.type";
 import { useDispatch } from "react-redux";
-import { addPost, cancelUpdatingPost, endUpdatingPost } from "../blog.reducer";
+import { addPost, cancelUpdatingPost, updatePost } from "../blog.reducer";
 import { useSelector } from "react-redux";
 import { RootState } from "store";
 import { AppDispatch } from "store";
@@ -29,7 +29,14 @@ function CreatePost() {
   };
   const handleEndUpdatingPost = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
     e.preventDefault();
-    dispatch(endUpdatingPost(formData));
+    if (updatingForm) {
+      dispatch(
+        updatePost({
+          postId: updatingForm.id,
+          body: formData,
+        }),
+      );
+    }
     setFormData(initialFormData);
   };
   return (
