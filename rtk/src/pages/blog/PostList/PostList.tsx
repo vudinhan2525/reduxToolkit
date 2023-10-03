@@ -2,7 +2,7 @@ import PostItem from "../PostItem";
 import { useGetPostsQuery } from "../blog.services";
 import SkeletonPost from "../SkeletonPost";
 export default function PostList() {
-  const { data, isLoading, isFetching } = useGetPostsQuery();
+  const { data, isFetching } = useGetPostsQuery();
   return (
     <div className="bg-white py-6 sm:py-8 lg:py-12">
       <div className="mx-auto max-w-screen-xl px-4 md:px-8">
