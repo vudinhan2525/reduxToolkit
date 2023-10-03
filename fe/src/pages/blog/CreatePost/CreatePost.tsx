@@ -5,6 +5,12 @@ import { addPost, cancelUpdatingPost, updatePost } from "../blog.reducer";
 import { useSelector } from "react-redux";
 import { RootState } from "store";
 import { AppDispatch } from "store";
+interface ErrorForm {
+  publishDate: undefined | string;
+}
+const initialErrorForm: ErrorForm = {
+  publishDate: undefined,
+};
 const initialFormData = {
   title: "",
   description: "",
@@ -15,6 +21,7 @@ const initialFormData = {
 };
 function CreatePost() {
   const [formData, setFormData] = useState<Post>(initialFormData);
+  const [errorForm, setErrorForm] = useState<ErrorForm>(initialErrorForm);
   const updatingForm = useSelector((state: RootState) => state.blog.updatingPost);
   const dispatch = useDispatch<AppDispatch>();
 
@@ -22,25 +29,43 @@ function CreatePost() {
     setFormData(updatingForm || initialFormData);
   }, [updatingForm]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    dispatch(addPost(formData));
-    setFormData(initialFormData);
-  };
-  const handleEndUpdatingPost = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
-    e.preventDefault();
-    if (updatingForm) {
-      dispatch(
-        updatePost({
-          postId: updatingForm.id,
-          body: formData,
-        }),
-      );
+    try {
+      await dispatch(addPost(formData)).unwrap();
+      setFormData(initialFormData);
+      setErrorForm(initialErrorForm);
+    } catch (error: any) {
+      setErrorForm(error.error);
     }
-    setFormData(initialFormData);
+  };
+  const handleEndUpdatingPost = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault();
+    try {
+      if (updatingForm) {
+        await dispatch(
+          updatePost({
+            postId: updatingForm.id,
+            body: formData,
+          }),
+        ).unwrap();
+        setErrorForm(initialErrorForm);
+        setFormData(initialFormData);
+      }
+    } catch (error: any) {
+      setErrorForm(error.error);
+    }
   };
   return (
-    <form onSubmit={handleSubmit} onReset={() => dispatch(cancelUpdatingPost())}>
+    <form
+      onSubmit={handleSubmit}
+      onReset={() => {
+        dispatch(cancelUpdatingPost());
+        if (errorForm.publishDate) {
+          setErrorForm(initialErrorForm);
+        }
+      }}
+    >
       <div className="mb-6">
         <label htmlFor="title" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
           Title
@@ -113,7 +138,11 @@ function CreatePost() {
         <input
           type="datetime-local"
           id="publishDate"
-          className="block w-56 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+          className={`block w-56 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500 ${
+            errorForm?.publishDate
+              ? "bg-red-50 text-red-600 focus:ring-red-600 outline-red-600 border-red-600 focus:border-red-600"
+              : ""
+          }`}
           placeholder="Title"
           required
           value={formData.publishDate}
@@ -126,6 +155,7 @@ function CreatePost() {
             })
           }
         />
+        {errorForm?.publishDate ? <p className="text-sm text-red-600">{errorForm.publishDate}</p> : <></>}
       </div>
       <div className="mb-6 flex items-center">
         <input

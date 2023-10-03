@@ -26,18 +26,32 @@ export const getPostList = createAsyncThunk("blog/getPostList", async (_, thunkA
   return res.data;
 });
 export const addPost = createAsyncThunk("blog/addPost", async (body: Omit<Post, "id">, thunkAPI) => {
-  const res = await http.post<Post>("posts", body, {
-    signal: thunkAPI.signal,
-  });
-  return res.data;
+  try {
+    const res = await http.post<Post>("posts", body, {
+      signal: thunkAPI.signal,
+    });
+    return res.data;
+  } catch (error: any) {
+    if (error.name === "AxiosError" && error.response.status === 422) {
+      return thunkAPI.rejectWithValue(error.response.data);
+    }
+    throw error;
+  }
 });
 export const updatePost = createAsyncThunk(
   "blog/updatePost",
   async ({ postId, body }: { postId: string; body: Post }, thunkAPI) => {
-    const res = await http.put<Post>(`posts/${postId}`, body, {
-      signal: thunkAPI.signal,
-    });
-    return res.data;
+    try {
+      const res = await http.put<Post>(`posts/${postId}`, body, {
+        signal: thunkAPI.signal,
+      });
+      return res.data;
+    } catch (error: any) {
+      if (error.name === "AxiosError" && error.response.status === 422) {
+        return thunkAPI.rejectWithValue(error.response.data);
+      }
+      throw error;
+    }
   },
 );
 export const deletePost = createAsyncThunk("blog/deletePost", async (postId: string, thunkAPI) => {
